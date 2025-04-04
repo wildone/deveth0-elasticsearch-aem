@@ -38,27 +38,29 @@ import java.util.HashMap;
 import java.util.Map;
 import javax.jcr.Session;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.felix.scr.annotations.Activate;
-import org.apache.felix.scr.annotations.Component;
-import org.apache.felix.scr.annotations.Property;
-import org.apache.felix.scr.annotations.Reference;
-import org.apache.felix.scr.annotations.Service;
 import org.apache.sling.api.resource.LoginException;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.resource.ResourceResolverFactory;
-import org.apache.sling.jcr.resource.JcrResourceConstants;
+import org.apache.sling.jcr.resource.api.JcrResourceConstants;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceReference;
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * This Content-Builder is responsible to filter all relevant information from the activation event into a ReplicationContent which is processed by
  * {@link ElasticSearchTransportHandler}.
  */
-@Component(metatype = false)
-@Service(ContentBuilder.class)
-@Property(name = "name", value = ElasticSearchIndexContentBuilder.NAME)
+@Component(
+        service = ContentBuilder.class,
+        property = {
+                "name=elastic"
+        },
+        immediate = true
+)
 public class ElasticSearchIndexContentBuilder implements ContentBuilder {
 
   private BundleContext context;

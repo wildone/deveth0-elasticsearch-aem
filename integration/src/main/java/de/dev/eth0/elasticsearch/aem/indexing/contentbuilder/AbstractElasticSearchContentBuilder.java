@@ -1,5 +1,3 @@
-//$URL: $
-//$Id: $
 package de.dev.eth0.elasticsearch.aem.indexing.contentbuilder;
 
 import de.dev.eth0.elasticsearch.aem.indexing.config.ElasticSearchIndexConfiguration;
@@ -10,12 +8,14 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.felix.scr.annotations.Activate;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ValueMap;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceReference;
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,8 +31,8 @@ public abstract class AbstractElasticSearchContentBuilder implements ElasticSear
   }
 
   /**
-   * @param primaryType
-   * @return List with all properties to index
+   * @param primaryType the JCR primary type
+   * @return index rules for this type merged with fixed rules
    */
   protected String[] getIndexRules(String primaryType) {
     ElasticSearchIndexConfiguration config = getIndexConfig(primaryType);
@@ -43,53 +43,48 @@ public abstract class AbstractElasticSearchContentBuilder implements ElasticSear
   }
 
   /**
-   *
-   * @return Array with hardcoded rules
+   * @return fixed rules to always include
    */
   protected String[] getFixedRules() {
     return new String[0];
   }
 
-
+  /**
+   * Service lookup for a configuration matching the given primaryType
+   */
   private ElasticSearchIndexConfiguration getIndexConfig(String primaryType) {
     try {
-      ServiceReference[] serviceReferences = context.getServiceReferences(ElasticSearchIndexConfiguration.class.getName(),
-              "(" + ElasticSearchIndexConfiguration.PROPERTY_BASE_PATH + "=" + primaryType + ")");
+      // find service for this primaryType
+      ServiceReference<?>[] serviceReferences = context.getServiceReferences(
+              ElasticSearchIndexConfiguration.class.getName(),
+              "(" + ElasticSearchIndexConfiguration.PRIMARY_TYPE + "=" + primaryType + ")"
+      );
       if (serviceReferences != null && serviceReferences.length > 0) {
-        return (ElasticSearchIndexConfiguration)context.getService(serviceReferences[0]);
+        return (ElasticSearchIndexConfiguration) context.getService(serviceReferences[0]);
       }
-    }
-    catch (InvalidSyntaxException | NullPointerException ex) {
+    } catch (InvalidSyntaxException | NullPointerException ex) {
       LOG.error("Exception during service lookup", ex);
     }
-    LOG.info("Could not load a ElasticSearchConfiguration for primaryType " + primaryType);
+    LOG.info("Could not load an ElasticSearchConfiguration for primaryType {}", primaryType);
     return null;
   }
 
   /**
-   * Recursively searches all child-resources for the given resources and returns a map with all of them
-   *
-   * @param res
-   * @param properties
-   * @return
+   * Recursively fetches all matching properties from a resource and its children.
    */
   protected Map<String, Object> getProperties(Resource res, String[] properties) {
-    //TODO: add support for * property
     ValueMap vm = res.getValueMap();
     Map<String, Object> ret = Arrays.stream(properties)
-            .filter(property -> vm.containsKey(property))
-            .collect(Collectors.toMap(Function.identity(), property -> vm.get(property)));
+            .filter(vm::containsKey)
+            .collect(Collectors.toMap(Function.identity(), vm::get));
 
     for (Resource child : res.getChildren()) {
       Map<String, Object> props = getProperties(child, properties);
-      // merge properties
-      props.entrySet().forEach(entry -> {
-        //TODO: Merge properties
-        if (!ret.containsKey(entry.getKey())) {
-          ret.put(entry.getKey(), entry.getValue());
-        }
-        else {
-          ret.put(entry.getKey(), mergeProperties(ret.get(entry.getKey()), entry.getValue()));
+      props.forEach((key, value) -> {
+        if (!ret.containsKey(key)) {
+          ret.put(key, value);
+        } else {
+          ret.put(key, mergeProperties(ret.get(key), value));
         }
       });
     }
@@ -97,18 +92,19 @@ public abstract class AbstractElasticSearchContentBuilder implements ElasticSear
   }
 
   private Object[] mergeProperties(Object obj1, Object obj2) {
-    List<Object> tmp = new ArrayList<>();
-    addProperty(tmp, obj1);
-    addProperty(tmp, obj2);
-    return tmp.toArray(new Object[tmp.size()]);
+    List<Object> merged = new ArrayList<>();
+    addProperty(merged, obj1);
+    addProperty(merged, obj2);
+    return merged.toArray();
   }
 
   private void addProperty(List<Object> list, Object property) {
-    if (property.getClass().isArray()) {
-      list.addAll(Arrays.asList((Object[])property));
-    }
-    else {
-      list.add(property);
+    if (property != null) {
+      if (property.getClass().isArray()) {
+        list.addAll(Arrays.asList((Object[]) property));
+      } else {
+        list.add(property);
+      }
     }
   }
 }

@@ -32,31 +32,72 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <build.compiler.source>1.8</build.compiler.source>
-    <build.compiler.target>1.8</build.compiler.target>
+    <version.content.package.maven.plugin>0.0.24</version.content.package.maven.plugin>
+    <version.org.elasticsearch.rest.client>8.17.4</version.org.elasticsearch.rest.client>
+    <version.aem.sdk.api>2025.2.19687.20250225T164325Z-250100</version.aem.sdk.api>
+    <version.plugin.bundle>5.1.6</version.plugin.bundle>
+    <version.plugin.jacoco>0.8.7</version.plugin.jacoco>
+    <version.plugin.lombok>1.18.20.0</version.plugin.lombok>
+    <version.lombok>1.18.24</version.lombok>
+    <version.plugin.javadoc>3.3.2</version.plugin.javadoc>
   </properties>
 
   <dependencyManagement>
     <dependencies>
+
+      <dependency>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <version>${version.plugin.bundle}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.elasticsearch.client</groupId>
+        <artifactId>elasticsearch-rest-client</artifactId>
+        <version>${version.org.elasticsearch.rest.client}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.day.jcr.vault</groupId>
+        <artifactId>content-package-maven-plugin</artifactId>
+        <version>${version.content.package.maven.plugin}</version>
+      </dependency>
+
       <dependency>
         <groupId>com.adobe.aem</groupId>
-        <artifactId>uber-jar</artifactId>
-        <classifier>obfuscated-apis</classifier>
-        <version>6.1.0</version>
+        <artifactId>aem-sdk-api</artifactId>
+        <version>${version.aem.sdk.api}</version>
         <scope>provided</scope>
       </dependency>
+
       <dependency>
-        <groupId>io.wcm.maven</groupId>
-        <artifactId>io.wcm.maven.aem-dependencies</artifactId>
-        <version>6.1.0.0000</version>
-        <type>pom</type>
-        <scope>import</scope>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <version>1.7.21</version>
+        <scope>provided</scope>
       </dependency>
+
       <dependency>
-        <groupId>de.dev.eth0.elasticsearch</groupId>
-        <artifactId>elasticsearch-rest-osgi</artifactId>
-        <version>5.1.1-SNAPSHOT</version>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-lang3</artifactId>
+        <version>3.12.0</version>
+        <scope>provided</scope>
       </dependency>
+
+      <dependency>
+        <groupId>commons-io</groupId>
+        <artifactId>commons-io</artifactId>
+        <version>1.4</version>
+        <scope>provided</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>javax.jcr</groupId>
+        <artifactId>jcr</artifactId>
+        <version>2.0</version>
+        <scope>provided</scope>
+      </dependency>
+
       <dependency>
         <groupId>de.dev.eth0.elasticsearch</groupId>
         <artifactId>elasticsearch-aem-integration</artifactId>
@@ -65,9 +106,17 @@
       <dependency>
         <groupId>org.projectlombok</groupId>
         <artifactId>lombok</artifactId>
-        <version>1.16.12</version>
+        <version>${version.lombok}</version>
         <scope>provided</scope>
       </dependency>
+
+      <dependency>
+        <groupId>org.projectlombok</groupId>
+        <artifactId>lombok-maven-plugin</artifactId>
+        <version>${version.plugin.lombok}</version>
+        <scope>provided</scope>
+      </dependency>
+
       <dependency>
         <groupId>org.apache.httpcomponents</groupId>
         <artifactId>httpasyncclient-osgi</artifactId>
@@ -77,12 +126,6 @@
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-databind</artifactId>
         <version>2.8.3</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.felix</groupId>
-        <artifactId>org.apache.felix.framework</artifactId>
-        <version>4.6.1</version>
-        <scope>provided</scope>
       </dependency>
 
       <dependency>
@@ -101,13 +144,6 @@
         <version>1.1.0</version>
       </dependency>
 
-      <dependency>
-        <groupId>org.apache.felix</groupId>
-        <artifactId>org.apache.felix.scr.annotations</artifactId>
-        <version>1.11.0</version>
-        <scope>compile</scope>
-      </dependency>
-      
       <dependency>
         <groupId>org.osgi</groupId>
         <artifactId>org.osgi.service.component</artifactId>
@@ -150,34 +186,80 @@
     </dependencies>
   </dependencyManagement>
 
-  <!-- -->
+
+
   <repositories>
     <repository>
       <id>adobe-public-releases</id>
-      <name>Adobe Basel Public Repository</name>
-      <url>http://repo.adobe.com/nexus/content/groups/public</url>
+      <name>Adobe Public Repository</name>
+      <url>https://repo.adobe.com/nexus/content/groups/public/</url>
+      <layout>default</layout>
       <releases>
         <enabled>true</enabled>
-        <updatePolicy>never</updatePolicy>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
+    <repository>
+      <id>central maven</id>
+      <url>http://central.maven.org/maven2/</url>
+      <layout>default</layout>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
+    <repository>
+      <id>repo1 maven</id>
+      <url>http://repo1.maven.org/maven2/</url>
+      <layout>default</layout>
+      <releases>
+        <enabled>true</enabled>
       </releases>
       <snapshots>
         <enabled>false</enabled>
       </snapshots>
     </repository>
   </repositories>
+
   <pluginRepositories>
     <pluginRepository>
       <id>adobe-public-releases</id>
-      <name>Adobe Basel Public Repository</name>
-      <url>http://repo.adobe.com/nexus/content/groups/public</url>
+      <name>Adobe Public Repository</name>
+      <url>https://repo.adobe.com/nexus/content/groups/public/</url>
+      <layout>default</layout>
       <releases>
         <enabled>true</enabled>
-        <updatePolicy>never</updatePolicy>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </pluginRepository>
+    <pluginRepository>
+      <id>central maven</id>
+      <url>http://central.maven.org/maven2/</url>
+      <layout>default</layout>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </pluginRepository>
+    <pluginRepository>
+      <id>repo1 maven</id>
+      <url>http://repo1.maven.org/maven2/</url>
+      <layout>default</layout>
+      <releases>
+        <enabled>true</enabled>
       </releases>
       <snapshots>
         <enabled>false</enabled>
       </snapshots>
     </pluginRepository>
   </pluginRepositories>
-  
+
 </project>

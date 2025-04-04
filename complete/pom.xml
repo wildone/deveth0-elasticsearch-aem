@@ -40,10 +40,6 @@
 
 
   <dependencies>
-    <dependency>
-      <groupId>de.dev.eth0.elasticsearch</groupId>
-      <artifactId>elasticsearch-rest-osgi</artifactId>
-    </dependency>
 
     <dependency>
       <groupId>de.dev.eth0.elasticsearch</groupId>

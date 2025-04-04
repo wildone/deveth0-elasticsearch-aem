@@ -26,8 +26,7 @@ import lombok.Getter;
 
 public class BoolQuery {
 
-  @Getter(onMethod = @__(
-          @JsonAnyGetter))
+  @Getter(onMethod_ = @JsonAnyGetter)
   protected final Map<QueryConstant, Query> query = new LinkedHashMap<>();
 
   public Query should() {

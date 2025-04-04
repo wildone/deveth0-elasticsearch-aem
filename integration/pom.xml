@@ -14,7 +14,6 @@
   <groupId>de.dev.eth0.elasticsearch</groupId>
   <artifactId>elasticsearch-aem-integration</artifactId>
   <version>1.0.0-SNAPSHOT</version>
-  <packaging>bundle</packaging>
 
   <name>ElasticSearch AEM Integration</name>
   <description>Integration of ElasticSearch into AEM to allow indexing and search</description>
@@ -32,27 +31,26 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <build.compiler.source>1.8</build.compiler.source>
-    <build.compiler.target>1.8</build.compiler.target>
+    <build.compiler.source>11</build.compiler.source>
+    <build.compiler.target>11</build.compiler.target>
+    <build.compiler.release>11</build.compiler.release>
   </properties>
 
 
   <dependencies>
-    <dependency>
-      <groupId>de.dev.eth0.elasticsearch</groupId>
-      <artifactId>elasticsearch-rest-osgi</artifactId>
-    </dependency>
-  
+
     <dependency>
       <groupId>com.adobe.aem</groupId>
-      <artifactId>uber-jar</artifactId>
-      <classifier>obfuscated-apis</classifier>
+      <artifactId>aem-sdk-api</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>org.apache.felix</groupId>
-      <artifactId>org.apache.felix.scr.annotations</artifactId>
+      <groupId>org.elasticsearch.client</groupId>
+      <artifactId>elasticsearch-rest-client</artifactId>
+
     </dependency>
+
+
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
@@ -80,10 +78,6 @@
       <artifactId>jackson-databind</artifactId>
     </dependency>
 
-    <dependency>
-      <groupId>org.apache.felix</groupId>
-      <artifactId>org.apache.felix.framework</artifactId>
-    </dependency>
 
     <dependency>
       <groupId>org.osgi</groupId>
@@ -122,25 +116,86 @@
   <build>
     <plugins>
 
+      <plugin>
+        <groupId>org.projectlombok</groupId>
+        <artifactId>lombok-maven-plugin</artifactId>
+        <version>${version.plugin.lombok}</version>
+        <executions>
+          <execution>
+            <id>delombok</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>delombok</goal>
+            </goals>
+            <configuration>
+              <sourceDirectory>${project.basedir}/src/main/java</sourceDirectory>
+              <targetDirectory>${project.build.directory}/generated-sources/delombok</targetDirectory>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- Compile delomboked code only -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.11.0</version>
+        <configuration>
+          <source>11</source>
+          <target>11</target>
+          <encoding>UTF-8</encoding>
+        </configuration>
+        <executions>
+          <execution>
+            <id>default-compile</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>compile</goal>
+            </goals>
+            <configuration>
+              <source>${build.compiler.source}</source>
+              <target>${build.compiler.target}</target>
+              <encoding>${project.build.sourceEncoding}</encoding>
+              <includes>
+                <include>**/*.java</include>
+              </includes>
+              <compileSourceRoots>
+                <compileSourceRoot>${project.build.directory}/generated-sources/delombok</compileSourceRoot>
+              </compileSourceRoots>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
 
       <!-- OSGI bundle configuration -->
       <plugin>
-        <groupId>org.apache.felix</groupId>
-        <artifactId>maven-bundle-plugin</artifactId>
+        <groupId>biz.aQute.bnd</groupId>
+        <artifactId>bnd-maven-plugin</artifactId>
+        <version>6.4.0</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>bnd-process</goal>
+            </goals>
+          </execution>
+        </executions>
         <configuration>
-          <instructions>
+          <bnd>
+            Bundle-SymbolicName: ${project.groupId}.${project.artifactId}
+            Bundle-Name: ${project.name}
+            Bundle-Version: ${project.version}
 
-            <!-- include application path as initial content -->
-            <Sling-Initial-Content>SLING-INF/app-root;overwrite:=true;ignoreImportProviders:=xml;path:=/apps/deveth0_elastic</Sling-Initial-Content>
+            Export-Package: \
+            de.dev.eth0.elasticsearch.*;version=${project.version}
 
-            <!-- export packages -->
-            <Export-Package>
-              de.dev.eth0.elasticsearch.*;version=${project.version}
-            </Export-Package>
-            <Sling-Model-Packages>
-              de.dev.eth0.elasticsearch
-            </Sling-Model-Packages>
-          </instructions>
+            Import-Package: *
+
+            -dsannotations: true
+            -metatype: *
+
+            Java-Compiler-Source: 11
+            Java-Compiler-Target: 11
+          </bnd>
         </configuration>
       </plugin>
 
@@ -150,6 +205,77 @@
         <groupId>org.apache.sling</groupId>
         <artifactId>maven-sling-plugin</artifactId>
       </plugin>
+
+      <plugin>
+        <groupId>biz.aQute.bnd</groupId>
+        <artifactId>bnd-baseline-maven-plugin</artifactId>
+        <configuration>
+          <failOnMissing>false</failOnMissing>
+        </configuration>
+        <executions>
+          <execution>
+            <id>baseline</id>
+            <goals>
+              <goal>baseline</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+          <archive>
+            <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+          </archive>
+        </configuration>
+      </plugin>
+      <!-- Java Code Coverage Plugin -->
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <version>${version.plugin.jacoco}</version>
+        <configuration>
+          <annotationProcessorPaths>
+            <path>
+              <groupId>org.projectlombok</groupId>
+              <artifactId>lombok</artifactId>
+              <version>${version.plugin.lombok}</version>
+            </path>
+          </annotationProcessorPaths>
+        </configuration>
+      </plugin>
+
+<!--      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>2.10.4</version>
+        <executions>
+          <execution>
+            <id>attach-javadocs</id>
+            <phase>none</phase> &lt;!&ndash; disables execution &ndash;&gt;
+          </execution>
+        </executions>
+      </plugin>-->
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>${version.plugin.javadoc}</version>
+        <configuration>
+          <sourcepath>${project.build.directory}/generated-sources/delombok</sourcepath>
+          <docletArtifact>
+            <groupId>javadoc</groupId>
+            <artifactId>standard</artifactId>
+            <version>1.0</version>
+          </docletArtifact>
+        </configuration>
+      </plugin>
+
     </plugins>
   </build>
 

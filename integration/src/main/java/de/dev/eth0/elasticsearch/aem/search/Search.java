@@ -32,6 +32,7 @@ import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.StringEntity;
+import org.elasticsearch.client.Request;
 import org.elasticsearch.client.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,10 +62,11 @@ public class Search {
       String queryString = serialize();
       LOG.info("Query: " + queryString);
       Response response = elasticSearchService.getRestClient().performRequest(
+              new Request(
               "GET",
-              "/" + index + "/_search",
-              Collections.<String, String>emptyMap(),
-              new StringEntity(queryString, "UTF-8"));
+              "/" + index + "/_search"
+              )
+      );
 
       HttpEntity entity = response.getEntity();
       return mapper.readValue(entity.getContent(), SearchResult.class);
